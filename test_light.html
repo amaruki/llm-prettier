@@ -1,0 +1,811 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>response.json - JSON Viewer</title>
+    <style>
+        /* 
+  llm_prettier/assets/style.css
+  Clean, standalone CSS. No Python f-string double braces here! 
+*/
+@import url("https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,300;0,400;0,500;1,300&family=DM+Sans:wght@300;400;500&display=swap");
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+:root,
+[data-theme="light"] {
+  --bg: #f7f5f2;
+  --surface: #ffffff;
+  --surface-2: #f0ede8;
+  --border: #e5e1da;
+  --border-soft: #ede9e3;
+  --text: #5c5650;
+  --text-strong: #1a1714;
+  --text-muted: #a09890;
+
+  --key: #1e40af;
+  --val-string: #15803d;
+  --val-number: #b45309;
+  --val-bool: #6d28d9;
+  --val-null: #be123c;
+
+  --accent: #2b6cb0;
+  --hl-bg: #fef3c7;
+  --hl-active: #fde68a;
+  --badge-bg: #e0f2fe;
+  --badge-text: #0369a1;
+
+  --font-ui: "DM Sans", system-ui, sans-serif;
+  --font-mono: "DM Mono", "Fira Code", monospace;
+
+  --radius: 8px;
+  --radius-sm: 5px;
+}
+
+[data-theme="dark"] {
+  --bg: #0d1117;
+  --surface: #161b22;
+  --surface-2: #21262d;
+  --border: #30363d;
+  --border-soft: #21262d;
+  --text: #8b949e;
+  --text-strong: #c9d1d9;
+  --text-muted: #6e7681;
+
+  --key: #79c0ff;
+  --val-string: #7ee787;
+  --val-number: #f2cc60;
+  --val-bool: #d2a8ff;
+  --val-null: #ff7b72;
+
+  --accent: #58a6ff;
+  --hl-bg: rgba(210, 153, 34, 0.2);
+  --hl-active: rgba(210, 153, 34, 0.5);
+  --badge-bg: rgba(56, 139, 253, 0.15);
+  --badge-text: #58a6ff;
+}
+
+body {
+  font-family: var(--font-ui);
+  background-color: var(--bg);
+  color: var(--text);
+  margin: 0;
+  padding: 0;
+  display: flex;
+  justify-content: center;
+  min-height: 100vh;
+  font-size: 13px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  transition:
+    background-color 0.2s,
+    color 0.2s;
+}
+
+.app-container {
+  width: 100%;
+  max-width: 960px;
+  padding: 32px 24px 80px;
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ── HEADER ─────────────────────────────────────── */
+header {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: var(--bg);
+  padding: 16px 0 14px;
+  margin-bottom: 18px;
+  border-bottom: 1px solid var(--border);
+  opacity: 0.95;
+  backdrop-filter: blur(10px);
+}
+
+.nav-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+h1 {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-weight: 400;
+  color: var(--text-strong);
+  letter-spacing: -0.1px;
+}
+
+h1 .file-ext {
+  color: var(--text-muted);
+  font-weight: 300;
+}
+
+.controls {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.btn {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 4px 10px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-size: 11px;
+  font-family: var(--font-ui);
+  font-weight: 400;
+  transition:
+    background 0.15s,
+    border-color 0.15s,
+    color 0.15s;
+  line-height: 1.5;
+}
+
+.btn:hover {
+  background: var(--surface-2);
+  color: var(--text-strong);
+  border-color: var(--text-strong);
+}
+
+.btn:active {
+  background: var(--border);
+}
+
+.btn-group {
+  display: flex;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+
+.btn-group .btn {
+  border: none;
+  border-right: 1px solid var(--border);
+  border-radius: 0;
+}
+.btn-group .btn:last-child {
+  border-right: none;
+}
+
+/* ── SEARCH ─────────────────────────────────────── */
+.sub-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.search-container {
+  position: relative;
+  flex: 1;
+}
+
+#search-input {
+  width: 100%;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 6px 80px 6px 10px;
+  font-size: 12px;
+  font-family: var(--font-ui);
+  color: var(--text-strong);
+  outline: none;
+  transition:
+    border-color 0.15s,
+    box-shadow 0.15s;
+}
+
+#search-input::placeholder {
+  color: var(--text-muted);
+}
+
+#search-input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(43, 108, 176, 0.1);
+}
+
+.search-actions {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 10px;
+  font-family: var(--font-mono);
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+/* ── META ROW ───────────────────────────────────── */
+.meta-row {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 10px;
+  font-size: 10.5px;
+  font-family: var(--font-mono);
+  color: var(--text-muted);
+  font-weight: 300;
+}
+
+#breadcrumb {
+  color: var(--accent);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 60%;
+}
+
+/* ── TREE VIEWER ────────────────────────────────── */
+#viewer {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 24px 32px;
+  font-family: var(--font-mono);
+  font-size: 13.5px;
+  line-height: 1.6;
+  overflow-x: auto;
+  box-shadow:
+    0 1px 3px rgba(0, 0, 0, 0.04),
+    0 4px 12px rgba(0, 0, 0, 0.03);
+  transition:
+    background-color 0.2s,
+    border-color 0.2s;
+}
+
+.node-row {
+  display: flex;
+  align-items: flex-start;
+  position: relative;
+  padding: 2.5px 0;
+  border-radius: 4px;
+}
+.node-row:hover {
+  background: var(--surface-2);
+}
+
+.json-dict,
+.json-array {
+  margin: 0;
+  padding: 0 0 0 24px;
+  list-style: none;
+  border-left: 1px dashed var(--border-soft);
+}
+
+.key {
+  color: var(--key);
+  cursor: pointer;
+  font-weight: 500;
+  letter-spacing: -0.2px;
+}
+.key:hover {
+  text-decoration: underline;
+  text-decoration-color: rgba(43, 108, 176, 0.4);
+  text-underline-offset: 3px;
+}
+
+.val-string {
+  color: var(--val-string);
+}
+.val-number {
+  color: var(--val-number);
+}
+.val-bool {
+  color: var(--val-bool);
+  font-weight: 500;
+}
+.val-null {
+  color: var(--val-null);
+  font-style: italic;
+  opacity: 0.8;
+}
+.comma {
+  color: var(--text-muted);
+  opacity: 0.6;
+}
+
+/* ── MULTILINE STRINGS & WRAPPING ───────────────── */
+body:not(.wrap-text) .val-string:not(.multiline-string) {
+  white-space: pre;
+}
+body.wrap-text .val-string:not(.multiline-string) {
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.multiline-string {
+  display: block;
+  margin: 4px 0 6px 0;
+  padding: 10px 14px;
+  background: var(--surface-2);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  line-height: 1.5;
+  font-family: var(--font-mono);
+  width: fit-content;
+  max-width: 100%;
+}
+
+body:not(.wrap-text) .multiline-string {
+  white-space: pre;
+  overflow-x: auto;
+}
+body.wrap-text .multiline-string {
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+/* ── TOGGLE ARROWS ──────────────────────────────── */
+.toggle {
+  width: 20px;
+  height: 20px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  margin-left: -22px;
+  position: absolute;
+  user-select: none;
+  z-index: 10;
+}
+.toggle::after {
+  content: "";
+  display: block;
+  width: 0;
+  height: 0;
+  border-style: solid;
+  border-width: 4px 0 4px 6px;
+  border-color: transparent transparent transparent var(--text-muted);
+  transition:
+    transform 0.15s,
+    border-left-color 0.15s;
+  position: relative;
+  left: 2px;
+}
+.toggle:hover::after {
+  border-left-color: var(--text-strong);
+}
+
+.collapsed > .children {
+  display: none;
+}
+.expanded > .toggle::after {
+  transform: rotate(90deg);
+  left: 1px;
+  top: 1px;
+}
+
+/* ── PREVIEW ─────────────────────────────────────── */
+.preview {
+  color: var(--text-muted);
+  font-size: 11px;
+  font-weight: 300;
+  margin-left: 8px;
+  cursor: pointer;
+}
+.preview:hover {
+  color: var(--text);
+}
+.collapsed > .preview {
+  display: inline;
+}
+.expanded > .preview {
+  display: none;
+}
+
+/* ── BADGE ──────────────────────────────────────── */
+.badge {
+  font-size: 9px;
+  background: var(--badge-bg);
+  color: var(--badge-text);
+  padding: 1px 6px;
+  border-radius: 100px;
+  margin-left: 8px;
+  font-weight: 500;
+  font-family: var(--font-ui);
+  letter-spacing: 0.2px;
+  text-transform: uppercase;
+  vertical-align: middle;
+}
+
+/* ── COPY HINT ──────────────────────────────────── */
+.copy-hint {
+  opacity: 0;
+  margin-left: 8px;
+  font-size: 10px;
+  cursor: pointer;
+  color: var(--text-muted);
+  transition:
+    opacity 0.15s,
+    color 0.15s;
+  font-family: var(--font-ui);
+  font-weight: 400;
+  user-select: none;
+  white-space: nowrap;
+}
+.node-row:hover .copy-hint {
+  opacity: 1;
+}
+.copy-hint:hover {
+  color: var(--accent);
+}
+
+/* ── SEARCH HIGHLIGHTS ──────────────────────────── */
+.match {
+  background: var(--hl-bg);
+  border-radius: 2px;
+}
+.match-active {
+  background: var(--hl-active);
+  border-radius: 2px;
+  box-shadow: 0 0 0 2px rgba(253, 230, 138, 0.6);
+}
+
+/* ── SCROLLBAR ──────────────────────────────────── */
+::-webkit-scrollbar {
+  height: 6px;
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-muted);
+}
+
+/* ── FOCUS VISIBLE ──────────────────────────────── */
+.btn:focus-visible,
+#search-input:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+    </style>
+</head>
+<body class="wrap-text" data-theme="light">
+    <div class="app-container">
+        <header>
+            <div class="nav-row">
+                <h1 id="file-title">response.json</h1>
+                <div class="controls">
+                    <button class="btn" id="btn-theme" onclick="toggleTheme()" title="Toggle Dark/Light Mode">Theme: Light</button>
+                    <button class="btn" id="btn-wrap" onclick="toggleWrap()" title="Toggle Word Wrap">Wrap: ON</button>
+                    <button class="btn" onclick="expandAll()" title="Expand all nodes">Expand all</button>
+                    <button class="btn" onclick="collapseAll()" title="Collapse all nodes">Collapse all</button>
+                    <div class="btn-group" role="group" aria-label="Collapse to depth">
+                        <button class="btn" onclick="collapseToDepth(1)" title="Show depth 1">D1</button>
+                        <button class="btn" onclick="collapseToDepth(2)" title="Show depth 2">D2</button>
+                        <button class="btn" onclick="collapseToDepth(3)" title="Show depth 3">D3</button>
+                    </div>
+                </div>
+            </div>
+            <div class="sub-row">
+                <div class="search-container">
+                    <input
+                        id="search-input"
+                        type="search"
+                        placeholder="Search keys and values… (⌘F)"
+                        autocomplete="off"
+                        aria-label="Search JSON"
+                    />
+                    <div class="search-actions" id="search-actions" aria-live="polite"></div>
+                </div>
+            </div>
+            <div class="meta-row">
+                <div id="breadcrumb" title="Click a key to copy its path" aria-label="Current path">$</div>
+                <div id="stats" aria-label="File statistics"></div>
+            </div>
+        </header>
+
+        <div id="viewer" role="tree" aria-label="JSON tree"></div>
+    </div>
+
+    <script>
+        const jsonData = {"id": "chatcmpl-6917036e-b37d-4476-af91-3f204f499853", "object": "chat.completion", "created": 1772747289, "model": "gemini-3-flash", "choices": [{"index": 0, "message": {"role": "assistant", "content": "[\n  {\n    \"clip_index\": 12,\n    \"viral_score\": 0.88,\n    \"hook_score\": 0.9,\n    \"standalone_score\": 0.9,\n    \"emotion_score\": 0.9,\n    \"arc_score\": 0.9,\n    \"replay_score\": 0.7,\n    \"trend_score\": 0.9,\n    \"suggested_start\": 53.0,\n    \"suggested_end\": 68.0,\n    \"hook_preview\": \"What did Clint Eastwood tell you about staying young?\",\n    \"payoff_preview\": \"Never let the old man in.\",\n    \"clip_reason\": \"A legendary piece of wisdom from one icon to another. It's punchy, philosophical, and universally relatable, making it perfect for wide sharing.\",\n    \"suggested_clip_title\": \"Clint Eastwood's Secret to Staying Young\",\n    \"platform_fit\": [\"tiktok\", \"reels\", \"shorts\"],\n    \"trim_notes\": \"Cut immediately after the applause following the 'Never let the old man in' line.\"\n  },\n  {\n    \"clip_index\": 14,\n    \"viral_score\": 0.83,\n    \"hook_score\": 0.95,\n    \"standalone_score\": 1.0,\n    \"emotion_score\": 0.8,\n    \"arc_score\": 0.7,\n    \"replay_score\": 0.8,\n    \"trend_score\": 0.5,\n    \"suggested_start\": 618.0,\n    \"suggested_end\": 645.0,\n    \"hook_preview\": \"Ankylosaurus versus T. rex. An evolutionary stalemate millions of years in the making.\",\n    \"payoff_preview\": \"But in this arms race, there's one thing that does set these dinosaurs apart. Intelligence.\",\n    \"clip_reason\": \"Combines high-quality visuals with the most iconic voice in history. It's satisfying, educational, and visually arresting for a scroll-stop.\",\n    \"suggested_clip_title\": \"Morgan Freeman Narrating Dinosaurs is Perfection\",\n    \"platform_fit\": [\"shorts\", \"tiktok\"],\n    \"trim_notes\": \"Ensure the T-Rex roar is the visual peak of the clip.\"\n  },\n  {\n    \"clip_index\": 2,\n    \"viral_score\": 0.79,\n    \"hook_score\": 0.8,\n    \"standalone_score\": 1.0,\n    \"emotion_score\": 0.7,\n    \"arc_score\": 0.8,\n    \"replay_score\": 0.6,\n    \"trend_score\": 0.7,\n    \"suggested_start\": 130.0,\n    \"suggested_end\": 155.0,\n    \"hook_preview\": \"Do you think that you have an amazing voice?\",\n    \"payoff_preview\": \"It's special to you. It ain't special to me.\",\n    \"clip_reason\": \"Morgan Freeman\u2019s humility regarding his own voice is counter-intuitive and funny, making it highly shareable for fans who find his voice iconic.\",\n    \"suggested_clip_title\": \"Morgan Freeman Doesn't Like His Own Voice?\",\n    \"platform_fit\": [\"tiktok\", \"reels\"],\n    \"trim_notes\": \"Keep the silence after Morgan says 'No' for comedic timing.\"\n  },\n  {\n    \"clip_index\": 4,\n    \"viral_score\": 0.75,\n    \"hook_score\": 0.7,\n    \"standalone_score\": 0.9,\n    \"emotion_score\": 0.6,\n    \"arc_score\": 0.8,\n    \"replay_score\": 0.7,\n    \"trend_score\": 0.8,\n    \"suggested_start\": 223.0,\n    \"suggested_end\": 270.0,\n    \"hook_preview\": \"Did you go to vocal training?\",\n    \"payoff_preview\": \"This instructor dropped my voice about an octave.\",\n    \"clip_reason\": \"Reveals the 'secret' behind the most famous voice in Hollywood. Educational and surprising for fans who assume it's natural.\",\n    \"suggested_clip_title\": \"The Secret Behind Morgan Freeman's Voice\",\n    \"platform_fit\": [\"shorts\", \"reels\"],\n    \"trim_notes\": \"Cut right after Morgan says he dropped his voice an octave.\"\n  },\n  {\n    \"clip_index\": 5,\n    \"viral_score\": 0.68,\n    \"hook_score\": 0.7,\n    \"standalone_score\": 0.8,\n    \"emotion_score\": 0.6,\n    \"arc_score\": 0.7,\n    \"replay_score\": 0.5,\n    \"trend_score\": 0.7,\n    \"suggested_start\": 323.0,\n    \"suggested_end\": 355.0,\n    \"hook_preview\": \"It's about these ladies who were spies for the Union Army.\",\n    \"payoff_preview\": \"Nobody's ever heard it. That's why we're telling it.\",\n    \"clip_reason\": \"Taps into the 'untold history' niche which performs exceptionally well on TikTok and YouTube Shorts.\",\n    \"suggested_clip_title\": \"The Untold Story of Civil War Spies\",\n    \"platform_fit\": [\"tiktok\", \"shorts\"],\n    \"trim_notes\": null\n  },\n  {\n    \"clip_index\": 10,\n    \"viral_score\": 0.62,\n    \"hook_score\": 0.8,\n    \"standalone_score\": 0.6,\n    \"emotion_score\": 0.8,\n    \"arc_score\": 0.6,\n    \"replay_score\": 0.5,\n    \"trend_score\": 0.5,\n    \"suggested_start\": 213.0,\n    \"suggested_end\": 240.0,\n    \"hook_preview\": \"I skipped over puberty. I never let the old man in.\",\n    \"payoff_preview\": \"Can I leave now?\",\n    \"clip_reason\": \"A hilarious comedic interaction that shows the chemistry between Fallon and Freeman. High entertainment value for comedy fans.\",\n    \"suggested_clip_title\": \"Morgan Freeman Skipped Puberty?\",\n    \"platform_fit\": [\"tiktok\", \"reels\"],\n    \"trim_notes\": \"Start right on Jimmy's puberty comment for a faster hook.\"\n  },\n  {\n    \"clip_index\": 7,\n    \"viral_score\": 0.58,\n    \"hook_score\": 0.7,\n    \"standalone_score\": 0.8,\n    \"emotion_score\": 0.7,\n    \"arc_score\": 0.7,\n    \"replay_score\": 0.5,\n    \"trend_score\": 0.6,\n    \"suggested_start\": 23.0,\n    \"suggested_end\": 55.0,\n    \"hook_preview\": \"See that hand? It won't hold a golf club.\",\n    \"payoff_preview\": \"I don't have to make anybody's par. Par 8's good enough.\",\n    \"clip_reason\": \"A vulnerable yet funny moment about aging and hobbies. Very relatable for older audiences and golf enthusiasts.\",\n    \"suggested_clip_title\": \"Morgan Freeman's Brutally Honest Golf Game\",\n    \"platform_fit\": [\"tiktok\", \"reels\"],\n    \"trim_notes\": \"Ensure the reveal of his hand is clear in the edit.\"\n  }\n]", "reasoning_content": "**Analyzing Viral Potential**\n\nI'm currently focused on evaluating clips from the Morgan Freeman interview on Jimmy Fallon. My primary goal is to identify segments with the greatest potential to go viral on 9:00, considering their standalone appeal and shareability. I'm prioritizing elements like humor, emotional resonance, and surprising statements.\n\n\n**Evaluating Clip Candidates**\n\nI've transitioned to evaluating specific clip candidates from the Freeman interview. I'm processing ten distinct clips, each with a time range and contextual notes. My focus is on each clip's potential as a standalone piece, considering the provided context. The data will be structured as a JSON array, ready for scoring and analysis.\n\n\n**Expanding Clip Evaluation**\n\nI've added five more clips to the existing dataset: Clip 11\u201315, each with a designated time and description of the context. I'm also including two more candidates: Candidate 1, featuring the Clint Eastwood quote, which I find particularly engaging, and Candidate 2, which includes Morgan Freeman's humble perspective on his voice. Both clips are showing promising viral potential.\n\n\n**Assessing Specific Clip Potential**\n\nI'm now zeroing in on specific clips and assessing their viral potential. I'm rating a segment on Freeman's voice origin as medium-high, as it is educational, and surprising. I've also added a puberty joke candidate that is funny, but relies on context. Clip 12 improves on Clip 1 by including the setup better. Lastly, I'm finding the Morgan Freeman dinosaur narration is high-potential due to visuals and the iconic voice.\n\n\n**Scoring Clip Candidates**\n\nI've just added detailed scoring for four specific clips: the \"Old Man\" secret clip, where the payoff is strong; the voice humility clip, which I've rated high for standalone appeal; the vocal training clip, which I've extended for the full payoff; and the dinosaur narration, which is showing lots of promise with it's visuals. I'm assigning scores for hook, standalone appeal, emotional resonance, narrative arc, replay value, and trend potential for each.\n\n\n**Scoring Clip Refinements**\n\nI've just added detailed scoring for new clips and refinements. I've re-scored clip 12, focusing on the setup, and have added it to the \"Aging Secret\" segment, which has a hook of 0.9, a standalone score of 0.8, emotional resonance of 0.8, narrative arc of 0.7, replay value of 0.7, and trend potential of 0.7, generating a total score of ~0.77. Clip 5 (\"Spies\") has also been scored at a viral potential of ~0.68. I'm noting the high energy of Clip 14 and have refined clip start times.\n\n\n**Prioritizing Viral Order**\n\nI've finalized sorting the clip data by viral score in descending order, and formatted everything as a JSON array. Clip 12 (\"Aging Secret\") leads with a score of 0.88, followed by Clip 14 (\"Dino Narration\") at 0.84, and Clip 2 (\"Voice Humility\") at 0.81. Then, comes Clip 4 (\"Vocal Training\") at 0.76, and finally Clip 5 (\"Spies\").\n\n\n**Refining Clip Analysis**\n\nI'm now scoring new clips for their viral potential. \"Puberty Joke\" lands at 0.62, while the \"Golfing\" segment has a score of 0.58. I've re-reviewed and refined several of the clip start and end times to better identify their viral hooks, and I've also done a final check on the viral score calculations. I will be adjusting these if needed.\n\n\n**Calculating Viral Scores**\n\nI've just refined my calculations for several clips, using the provided weights for each factor. Clip 12 (\"Aging Secret\") remains top-ranked, followed by Clip 14 (\"Dino Narration\"), and Clip 2 (\"Voice Humility\"). I also reviewed my constraints to clarify any requirements that are related to file paths, but found they are not a concern.\n\n\n**Clarifying Path Requirements**\n\nI'm revisiting the requirement for absolute file paths, as I'm creating a JSON output from a transcript, and file system operations aren't involved. I will continue to review candidate clip indices for their values. I'm focusing on suggested adjustments to specific segments, like extending Clip 4 to 04:25 to include the octave payoff. I will only evaluate these existing segments.\n\n\n\n**Revising Clip Segments**\n\nI'm making a final review of several clip segments. I've adjusted Clip 4 to 03:43\u201304:30 to include the full vocal payoff. Clip 10 (puberty joke) and Clip 5 (spies) are finalized. The JSON structure, is also finalized. I'm confirming that the data is ready for analysis.\n\n\n**Finalizing Data Refinement**\n\nI've just finalized the dataset based on your recommendations, and updated the JSON array with the most efficient segments. I've chosen Clip 12 over Clip 1, and verified Clip 9 is distinct from Clip 15, adding these segments as well. I'm focusing on the TikTok fit for each clip.\n\n\n**Revising Clip Data**\n\nI've just revisited Clip 7 (\"Golf Game\"), seeing new viral potential there with a fresh hook and payoff to score. I found a great hook and payoff for the segment, \"How's your golf game?\" and \"I only got this one to golf with. How good can it be?\" I'm including these now, for a score of ~0.55.\n\n\n**Evaluating Clip Selection**\n\nI've just added the Spielberg clip to the analysis, and I'm finalizing my clip selection. My most recent analysis had golf at ~0.55. The clips, and the JSON, are complete, and I'm ready for the next stage of processing. The old man clip is a great setup with 12 over 1.\n\n\n**Refining Clip Choices**\n\nI'm now zeroing in on a final clip selection, focusing on short-form appeal. While \"Voice of God\" (Clip 8) is slow, Clip 14 (\"Dino Narration\") is prime for short-form, and Clip 12 is also strong. I've re-checked clip start and end times, ensuring everything fits the TikTok format, and reviewed hook and payoff previews to meet length constraints.\n\n\n**Finalizing Clip Titles**\n\nI've just refined the clip titles based on your feedback to keep them within the 10-word limit. \"Clint Eastwood's Secret to Staying Young\" and \"Morgan Freeman Narrating Dinosaurs is Perfection\" are finalized. I'm also including \"Morgan Freeman's Humble Voice\". My attention is now focused on ensuring each title perfectly captures the essence of its respective clip, given the time constraints.\n\n\n**Evaluating Final Clips**\n\nI've just refined the latest clips. \"Morgan Freeman Doesn't Like His Own Voice?\" and \"The Secret Behind Morgan Freeman's Voice\" look promising. The \"Untold Story of Civil War Spies\" also looks strong. I believe I have the highest-potential segments chosen, based on their hooks and payoffs.\n\n\n**Refining Clip Scores**\n\nI'm now evaluating a new clip: \"Morgan Freeman Skipped Puberty?\" It's a hilarious comedic interaction. I've also re-evaluated Clip 7, \"Morgan Freeman's Brutally Honest Golf Game\", as vulnerable. I found an older audience will relate to the discussion. I'll make sure to use Clip 12, not Clip 1. I'll include the \"old man\" payoff.\n\n\n**Clarifying Clip Analysis**\n\nI'm now clarifying the analysis of Clips 1 and 2, which I previously mixed up. Clip 1 (01:48\u201302:05) asks about the voice, while Clip 12 (00:53\u201301:15) refers to the aging secret. I've re-reviewed the segments, and I now believe that Clip 2 (02:10\u201302:35) is stronger due to its payoff line, \"It ain't special to me\".\n\n\n"}, "finish_reason": "stop"}], "usage": {"prompt_tokens": 4903, "completion_tokens": 1824, "total_tokens": 13922}};
+
+// ── FORMATTERS ──────────────────────────────────────────
+function fmtBytes(b) {
+    if (b < 1024) return b + '\u202fB';
+    if (b < 1048576) return (b / 1024).toFixed(1) + '\u202fKB';
+    return (b / 1048576).toFixed(1) + '\u202fMB';
+}
+
+function escapeHTML(str) {
+    return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
+// ── COPIER ──────────────────────────────────────────────
+function copy(text, el) {
+    navigator.clipboard.writeText(text).then(() => {
+        const original = el.textContent;
+        el.textContent = 'Copied!';
+        el.style.color = 'var(--val-string)';
+        setTimeout(() => {
+            el.textContent = original;
+            el.style.color = '';
+        }, 1000);
+    }).catch(err => console.error('Failed to copy', err));
+}
+
+// ── BUILD TREE HTML (EVENT DELEGATION) ──────────────────
+function buildTreeHTML(val, key = null, path = '$') {
+    let html = '<div class="node-row" role="treeitem">';
+    
+    if (key !== null) {
+        html += `<span class="key" data-path="${escapeHTML(path)}" title="Click to copy path: ${escapeHTML(path)}">"${escapeHTML(key)}"</span>: `;
+    }
+
+    if (val === null) {
+        html += `<span class="val-null searchable" data-val="null">null</span><span class="copy-hint" data-copy="null" title="Copy value">copy</span>`;
+    } else if (typeof val === 'string') {
+        let parsed = null;
+        const t = val.trim();
+        if ((t.startsWith('{') && t.endsWith('}')) || (t.startsWith('[') && t.endsWith(']'))) {
+            try { parsed = JSON.parse(val); } catch (e) {}
+        }
+
+        if (parsed) {
+            html += buildCollapsibleHTML(parsed, path + ' <parsed>', true);
+        } else {
+            const hasNewlines = val.includes('\n');
+            const displayVal = escapeHTML(val);
+            
+            if (hasNewlines) {
+                // multiline strings get rendered as standalone blocks for easy reading
+                html += `<div><div class="val-string searchable multiline-string" data-val="${displayVal}">${displayVal}</div></div><span class="copy-hint" data-copy="${displayVal}" style="position:absolute; right:10px; top:4px;" title="Copy value">copy</span>`;
+            } else {
+                html += `<span class="val-string searchable" data-val="${displayVal}">"${displayVal}"</span><span class="copy-hint" data-copy="${displayVal}" title="Copy value">copy</span>`;
+            }
+        }
+    } else if (typeof val === 'number') {
+        html += `<span class="val-number searchable" data-val="${escapeHTML(val)}">${val}</span><span class="copy-hint" data-copy="${escapeHTML(val)}" title="Copy value">copy</span>`;
+    } else if (typeof val === 'boolean') {
+        html += `<span class="val-bool searchable" data-val="${val}">${val}</span><span class="copy-hint" data-copy="${escapeHTML(val)}" title="Copy value">copy</span>`;
+    } else {
+        html += buildCollapsibleHTML(val, path, false);
+    }
+
+    html += '</div>';
+    return html;
+}
+
+function buildCollapsibleHTML(val, path, isParsed) {
+    const isArr = Array.isArray(val);
+    const depth = path.split(/[\.\[]/).length;
+    const entries = isArr ? val : Object.keys(val);
+    const count = entries.length;
+    const prevText = isArr 
+        ? count + (count === 1 ? ' item' : ' items')
+        : count + (count === 1 ? ' key' : ' keys');
+
+    let html = `<div class="expanded collapsible-node" data-depth="${depth}" role="group">`;
+    html += `<span class="toggle" aria-label="Toggle"></span>`;
+    html += isArr ? '[' : '{';
+    
+    if (isParsed) html += `<span class="badge">JSON string</span>`;
+
+    html += `<span class="preview">${prevText}</span>`;
+    html += `<div class="children">`;
+    html += `<ul class="${isArr ? 'json-array' : 'json-dict'}">`;
+
+    entries.forEach((entry, i) => {
+        html += '<li>';
+        const v = isArr ? entry : val[entry];
+        const k = isArr ? null : entry;
+        const p = isArr ? path + '[' + i + ']' : path + '.' + k;
+        html += buildTreeHTML(v, k, p);
+        if (i < count - 1) html += '<span class="comma">,</span>';
+        html += '</li>';
+    });
+
+    html += `</ul></div>${isArr ? ']' : '}'}</div>`;
+    return html;
+}
+
+// ── INIT ────────────────────────────────────────────────
+function init() {
+    // Restore theme/wrap
+    if (localStorage.getItem('llm_theme') === 'dark') toggleTheme(true);
+    if (localStorage.getItem('llm_wrap') === 'off') toggleWrap(true);
+
+    const name = "response.json";
+    const dot = name.lastIndexOf('.');
+    const el = document.getElementById('file-title');
+    if (dot !== -1) {
+        el.innerHTML = '';
+        el.appendChild(document.createTextNode(name.slice(0, dot)));
+        const ext = document.createElement('span');
+        ext.className = 'file-ext';
+        ext.textContent = name.slice(dot);
+        el.appendChild(ext);
+    }
+
+    // Render tree
+    document.getElementById('viewer').innerHTML = buildTreeHTML(jsonData);
+
+    // Compute Stats
+    let keys = 0, depth = 0;
+    function walk(v, d) {
+        if (d > depth) depth = d;
+        if (v && typeof v === 'object') {
+            const ks = Object.keys(v);
+            keys += ks.length;
+            ks.forEach(k => walk(v[k], d + 1));
+        }
+    }
+    walk(jsonData, 0);
+
+    const size = new TextEncoder().encode(JSON.stringify(jsonData)).length;
+    document.getElementById('stats').textContent =
+        keys.toLocaleString() + ' keys · depth ' + depth + ' · ' + fmtBytes(size);
+}
+
+// ── TOGGLES ─────────────────────────────────────────────
+function toggleTheme(forceDark = false) {
+    const isDark = (forceDark === true) || document.body.getAttribute('data-theme') === 'light';
+    document.body.setAttribute('data-theme', isDark ? 'dark' : 'light');
+    document.getElementById('btn-theme').textContent = isDark ? 'Theme: Dark' : 'Theme: Light';
+    localStorage.setItem('llm_theme', isDark ? 'dark' : 'light');
+}
+
+function toggleWrap(forceOff = false) {
+    const isWrap = (forceOff === true) ? false : !document.body.classList.contains('wrap-text');
+    if (isWrap) document.body.classList.add('wrap-text');
+    else document.body.classList.remove('wrap-text');
+    document.getElementById('btn-wrap').textContent = isWrap ? 'Wrap: ON' : 'Wrap: OFF';
+    localStorage.setItem('llm_wrap', isWrap ? 'on' : 'off');
+}
+
+// ── EVENT DELEGATION ────────────────────────────────────
+document.getElementById('viewer').addEventListener('click', (e) => {
+    const target = e.target;
+
+    if (target.classList.contains('toggle')) {
+        const group = target.parentElement;
+        const isExp = group.classList.contains('expanded');
+        group.classList.toggle('expanded', !isExp);
+        group.classList.toggle('collapsed', isExp);
+        return;
+    }
+
+    if (target.classList.contains('preview')) {
+        const group = target.parentElement;
+        group.classList.add('expanded');
+        group.classList.remove('collapsed');
+        return;
+    }
+
+    if (target.classList.contains('key')) {
+        const path = target.getAttribute('data-path');
+        if (path) {
+            document.getElementById('breadcrumb').textContent = path;
+            copy(path, target);
+        }
+        return;
+    }
+
+    if (target.classList.contains('copy-hint')) {
+        const textToCopy = target.getAttribute('data-copy');
+        if (textToCopy !== null) copy(document.createElement('div').innerHTML = textToCopy, target); // Decode entities
+        return;
+    }
+});
+
+// ── CONTROLS ────────────────────────────────────────────
+function expandAll() {
+    document.querySelectorAll('.collapsible-node').forEach(n => {
+        n.classList.add('expanded');
+        n.classList.remove('collapsed');
+    });
+}
+
+function collapseAll() {
+    document.querySelectorAll('.collapsible-node').forEach(n => {
+        n.classList.add('collapsed');
+        n.classList.remove('expanded');
+    });
+}
+
+function collapseToDepth(d) {
+    document.querySelectorAll('.collapsible-node').forEach(n => {
+        const deep = parseInt(n.getAttribute('data-depth')) >= d;
+        n.classList.toggle('collapsed', deep);
+        n.classList.toggle('expanded', !deep);
+    });
+}
+
+// ── SEARCH ──────────────────────────────────────────────
+let matches = [], mIdx = 0;
+const sInput = document.getElementById('search-input');
+const sActions = document.getElementById('search-actions');
+
+let debounceTimer;
+sInput.addEventListener('input', () => {
+    clearTimeout(debounceTimer);
+    debounceTimer = setTimeout(() => {
+        document.querySelectorAll('.match').forEach(el => el.classList.remove('match', 'match-active'));
+        matches = [];
+        mIdx = 0;
+        const q = sInput.value.toLowerCase();
+        if (!q) { sActions.textContent = ''; return; }
+
+        document.querySelectorAll('.key, .searchable').forEach(el => {
+            if (el.textContent.toLowerCase().includes(q)) {
+                el.classList.add('match');
+                matches.push(el);
+                let p = el.parentElement;
+                while (p && p.id !== 'viewer') {
+                    if (p.classList.contains('collapsible-node')) {
+                        p.classList.add('expanded');
+                        p.classList.remove('collapsed');
+                    }
+                    p = p.parentElement;
+                }
+            }
+        });
+
+        if (matches.length) highlightMatch();
+        else sActions.textContent = '0 results';
+    }, 200);
+});
+
+function highlightMatch() {
+    matches.forEach(el => el.classList.remove('match-active'));
+    const cur = matches[mIdx];
+    cur.classList.add('match-active');
+    cur.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    sActions.textContent = (mIdx + 1) + ' / ' + matches.length;
+}
+
+window.addEventListener('keydown', (e) => {
+    if ((e.ctrlKey || e.metaKey) && e.key === 'f') {
+        e.preventDefault();
+        sInput.focus();
+    }
+    if (e.key === 'Enter' && matches.length) {
+        mIdx = (mIdx + (e.shiftKey ? -1 : 1) + matches.length) % matches.length;
+        highlightMatch();
+    }
+    if (e.key === 'Escape') {
+        sInput.value = '';
+        sInput.dispatchEvent(new Event('input'));
+        sInput.blur();
+    }
+});
+
+init();
+
+    </script>
+</body>
+</html>

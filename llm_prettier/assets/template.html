@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{title}} - JSON Viewer</title>
+    <style>
+        /* INJECTION_STYLE */
+    </style>
+</head>
+<body class="wrap-text" data-theme="light">
+    <div class="app-container">
+        <header>
+            <div class="nav-row">
+                <h1 id="file-title">{{title}}</h1>
+                <div class="controls">
+                    <button class="btn" id="btn-theme" onclick="toggleTheme()" title="Toggle Dark/Light Mode">Theme: Light</button>
+                    <button class="btn" id="btn-wrap" onclick="toggleWrap()" title="Toggle Word Wrap">Wrap: ON</button>
+                    <button class="btn" onclick="expandAll()" title="Expand all nodes">Expand all</button>
+                    <button class="btn" onclick="collapseAll()" title="Collapse all nodes">Collapse all</button>
+                    <div class="btn-group" role="group" aria-label="Collapse to depth">
+                        <button class="btn" onclick="collapseToDepth(2)" title="Show depth 2">D2</button>
+                        <button class="btn" onclick="collapseToDepth(3)" title="Show depth 3">D3</button>
+                        <button class="btn" onclick="collapseToDepth(4)" title="Show depth 4">D4</button>
+                    </div>
+                </div>
+            </div>
+            <div class="sub-row">
+                <div class="search-container">
+                    <input
+                        id="search-input"
+                        type="search"
+                        placeholder="Search keys and values… (⌘F)"
+                        autocomplete="off"
+                        aria-label="Search JSON"
+                    />
+                    <div class="search-actions" id="search-actions" aria-live="polite"></div>
+                </div>
+            </div>
+            <div class="meta-row">
+                <div id="breadcrumb" title="Click a key to copy its path" aria-label="Current path">$</div>
+                <div id="stats" aria-label="File statistics"></div>
+            </div>
+        </header>
+
+        <div id="viewer" role="tree" aria-label="JSON tree"></div>
+    </div>
+
+    <script>
+        /* INJECTION_SCRIPT */
+    </script>
+</body>
+</html>
